@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Payment Management</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="common.css" rel="stylesheet">
+
+</head>
+
+<body>
+
+    <div class="container mt-4">
+
+        <div class="d-flex justify-content-between mb-3">
+
+            <h3>Payment Management</h3>
+
+            <div>
+                <button class="btn btn-secondary me-2" onclick="goHome()">Back</button>
+                <button class="btn btn-outline-danger" onclick="logout()">Logout</button>
+            </div>
+
+        </div>
+
+        <div id="alertBox"></div>
+
+        <table class="table table-bordered">
+
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Order ID</th>
+                    <th>User ID</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Created Time</th>
+                    <th>Updated Time</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody id="paymentTable"></tbody>
+
+        </table>
+
+    </div>
+
+
+    <script src="common.js"></script>
+
+    <script>
+
+        const PAYMENT_BASE = "http://localhost:8084";
+
+        /**
+         * Load payments after page loaded
+         */
+        window.onload = () => {
+            loadPayments();
+        };
+
+        /**
+         * Navigate back to home page
+         */
+        function goHome() {
+            window.location.href = "index.html";
+        }
+
+        /**
+         * Format datetime
+         */
+        function formatTime(t) {
+
+            if (!t) return "";
+
+            const date = new Date(t);
+
+            return date.toLocaleString();
+
+        }
+
+        /**
+         * Load current user's payments
+         */
+        async function loadPayments() {
+
+            const token = getToken();
+
+            const res = await fetch(PAYMENT_BASE + "/payments", {
+                headers: {
+                    "Authorization": "Bearer " + token
+                }
+            });
+
+            const result = await res.json();
+
+            const payments = result.data;
+
+            const table = document.getElementById("paymentTable");
+
+            table.innerHTML = "";
+
+            payments.forEach(p => {
+
+                let action = "";
+
+                /**
+                 * Only CREATED payments can be paid
+                 */
+                if (p.status === "CREATED") {
+
+                    action = `
+<button class="btn btn-primary btn-sm"
+onclick="pay('${p.orderId}')">
+Pay
+</button>
+`;
+
+                }
+
+                table.innerHTML += `
+
+<tr>
+
+<td>${p.id}</td>
+<td>${p.orderId}</td>
+<td>${p.userId}</td>
+<td>${p.amount}</td>
+<td>${statusBadge(p.status)}</td>
+<td>${formatTime(p.createdAt)}</td>
+<td>${formatTime(p.updatedAt)}</td>
+<td>${action}</td>
+
+</tr>
+
+`;
+
+            });
+
+        }
+
+        /**
+         * Payment status badge
+         */
+        function statusBadge(status) {
+
+            if (status === "CREATED")
+                return `<span class="badge bg-secondary">CREATED</span>`;
+
+            if (status === "PAID")
+                return `<span class="badge bg-success">PAID</span>`;
+
+            if (status === "CANCELLED")
+                return `<span class="badge bg-danger">CANCELLED</span>`;
+
+            if (status === "REFUNDED")
+                return `<span class="badge bg-warning">REFUNDED</span>`;
+
+            if (status === "FINISHED")
+                return `<span class="badge bg-primary">FINISHED</span>`;
+
+            return status;
+
+        }
+
+        /**
+         * Call payment API
+         */
+        async function pay(orderId) {
+
+            if (!confirm("Confirm payment for this order?")) {
+                return;
+            }
+
+            const token = getToken();
+
+            const res = await fetch(
+                PAYMENT_BASE + "/payments/pay?orderId=" + orderId,
+                {
+                    method: "POST",
+                    headers: {
+                        "Authorization": "Bearer " + token
+                    }
+                }
+            );
+
+            const result = await res.json();
+
+            if (result.code === 200) {
+
+                showAlert("Payment successful");
+
+                loadPayments();
+
+            } else {
+
+                showAlert(result.message, "danger");
+
+            }
+
+        }
+
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+
+</html>

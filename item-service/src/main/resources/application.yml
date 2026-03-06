@@ -1,0 +1,10 @@
+server:
+  port: 8082
+
+spring:
+  data:
+    mongodb:
+      uri: mongodb://192.168.32.128:27017/item_db
+
+  application:
+    name: item-service

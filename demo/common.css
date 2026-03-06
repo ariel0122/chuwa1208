@@ -1,0 +1,16 @@
+body {
+    background: linear-gradient(to right, #eef2f3, #d9e2ec);
+}
+
+.card {
+    border-radius: 12px;
+}
+
+.form-label {
+    font-weight: 600;
+}
+
+.page-title {
+    font-weight: 700;
+    letter-spacing: 1px;
+}
